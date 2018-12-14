@@ -28,8 +28,8 @@ class AST repr where
   lit :: Int -> repr
   plus :: repr -> repr -> repr
 
-class Hole repr where
-  hole :: String -> repr
+class Var repr where
+  var :: String -> repr
 
 type WholeParser repr = Parser repr
 type LitParser repr = Parser repr
@@ -49,20 +49,20 @@ originalParser = MkObject $ \(~(_, p)) -> let
   wholeP = litP <|> plusP in
   ((litP, plusP), wholeP)
 
-type HoleParser repr = Parser repr
-extendedParser :: (AST repr, Hole repr) => Object (HoleParser repr, OriginalParser repr)
+type VarParser repr = Parser repr
+extendedParser :: (AST repr, Var repr) => Object (VarParser repr, OriginalParser repr)
 extendedParser = inherit extend snd originalParser
   where
     extend ~((litP, plusP), wholeP) = let
-      holeP = hole <$> stringP in
-      (holeP, ((litP, plusP), holeP <|> wholeP))
+      varP = var <$> stringP in
+      (varP, ((litP, plusP), varP <|> wholeP))
 
 instance AST String where
   lit = show
   plus x y = "(" ++ x ++ " " ++ "+" ++ " " ++ y ++ ")"
 
-instance Hole String where
-  hole x = x
+instance Var String where
+  var x = x
 
 someFunc :: IO ()
 someFunc = do
