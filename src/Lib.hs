@@ -15,7 +15,7 @@ use (MkObject x) = let res = x res in res
 
 -- ab is extend, ba is super, and this is the only impl that use everything once.
 inherit :: (a -> b) -> (b -> a) -> Object a -> Object b
-inherit ab ba (MkObject aa) = MkObject (\b -> ab $ aa $ ba b)
+inherit ab ba (MkObject aa) = MkObject (ab . aa . ba)
 
 -- an object with two virtual field
 test :: Object (Int, Int)
