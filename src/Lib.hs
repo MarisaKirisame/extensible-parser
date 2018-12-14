@@ -22,7 +22,7 @@ test :: Object (Int, Int)
 test = MkObject $ \self -> (2, fst self + fst self)
 
 inheritTest :: Object ((Int, Int), Int)
-inheritTest = inherit (\(l, r) -> ((l+1, r), r+1)) fst test
+inheritTest = inherit (\(l, r) -> ((l + 1, r + 2), r + 1)) fst test
 
 class AST repr where
   lit :: Int -> repr
