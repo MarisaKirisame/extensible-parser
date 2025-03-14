@@ -8,13 +8,14 @@ import Text.Parsec
 import Text.Parsec.String
 
 import Data.Coerce (coerce)
+import Data.Function
 
 -- model open recursion by making self dependency explicit.
 data Object x = MkObject (x -> x)
 
 -- tying the knot
 use :: Object x -> x
-use (MkObject x) = let res = x res in res
+use (MkObject x) = fix x
 
 -- ab is extend, ba is super, and this is the only impl that use everything once.
 inherit :: (a -> b) -> (b -> a) -> Object a -> Object b
