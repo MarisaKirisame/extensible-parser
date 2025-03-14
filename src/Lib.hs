@@ -1,7 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE NoMonomorphismRestriction #-}
+-- {-# LANGUAGE  Haskell2010 #-}
 
 module Lib (
   someFunc,
@@ -9,6 +6,8 @@ module Lib (
 
 import Text.Parsec
 import Text.Parsec.String
+
+import Data.Coerce (coerce)
 
 -- model open recursion by making self dependency explicit.
 data Object x = MkObject (x -> x)
@@ -68,17 +67,24 @@ extendedParser = inherit extend snd originalParser
      in
       (varP, ((litP, plusP), varP <|> wholeP))
 
-instance AST String where
-  lit = show
-  plus x y = "(" ++ x ++ " " ++ "+" ++ " " ++ y ++ ")"
+instance AST MyString where
+  lit = MyString . show
+  plus =
+    let f x y = "(" ++ x ++ " " ++ "+" ++ " " ++ y ++ ")" in coerce f
 
-instance Var String where
-  var x = x
+instance Var MyString where
+  var = MyString
+
+instance Show MyString where
+  show = unMyString
+
+-- use MyString avoid use FlexibleInstances extension
+newtype MyString = MyString {unMyString :: String}
 
 someFunc :: IO ()
 someFunc = do
   print $ use test
   print $ use inheritTest
-  print $ runParser (snd $ use (originalParser :: Object (OriginalParser String))) () "" "(1 + 2)"
-  print $ runParser (snd $ use (originalParser :: Object (OriginalParser String))) () "" "(1 + a)"
-  print $ runParser (snd $ snd $ use (extendedParser :: Object (ExtendedParser String))) () "" "(1 + a)"
+  print $ runParser (snd $ use (originalParser :: Object (OriginalParser MyString))) () "" "(1 + 2)"
+  print $ runParser (snd $ use (originalParser :: Object (OriginalParser MyString))) () "" "(1 + a)"
+  print $ runParser (snd $ snd $ use (extendedParser :: Object (ExtendedParser MyString))) () "" "(1 + a)"
