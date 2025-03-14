@@ -1,7 +1,11 @@
-{-# Language TupleSections, NoMonomorphismRestriction, TypeSynonymInstances, FlexibleInstances #-}
-module Lib
-    ( someFunc
-    ) where
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+
+module Lib (
+  someFunc,
+) where
 
 import Text.Parsec
 import Text.Parsec.String
@@ -42,19 +46,26 @@ stringP :: Parser String
 stringP = many1 letter
 
 type OriginalParser repr = ((LitParser repr, PlusParser repr), WholeParser repr)
-originalParser :: AST repr => Object (OriginalParser repr)
-originalParser = MkObject $ \(~(_, p)) -> let
-  litP = lit <$> intP
-  plusP = between (char '(') (char ')') (do {l <- p; spaces; char '+'; spaces; r <- p; return $ plus l r})
-  wholeP = litP <|> plusP in
-  ((litP, plusP), wholeP)
+
+originalParser :: (AST repr) => Object (OriginalParser repr)
+originalParser = MkObject $ \(~(_, p)) ->
+  let
+    litP = lit <$> intP
+    plusP = between (char '(') (char ')') (do l <- p; spaces; char '+'; spaces; r <- p; return $ plus l r)
+    wholeP = litP <|> plusP
+   in
+    ((litP, plusP), wholeP)
+
+type ExtendedParser repr = (VarParser repr, OriginalParser repr)
 
 type VarParser repr = Parser repr
-extendedParser :: (AST repr, Var repr) => Object (VarParser repr, OriginalParser repr)
+extendedParser :: (AST repr, Var repr) => Object (ExtendedParser repr)
 extendedParser = inherit extend snd originalParser
-  where
-    extend ~((litP, plusP), wholeP) = let
-      varP = var <$> stringP in
+ where
+  extend ~((litP, plusP), wholeP) =
+    let
+      varP = var <$> stringP
+     in
       (varP, ((litP, plusP), varP <|> wholeP))
 
 instance AST String where
@@ -68,6 +79,6 @@ someFunc :: IO ()
 someFunc = do
   print $ use test
   print $ use inheritTest
-  print $ fmap (""++) $ runParser (snd $ use originalParser) () "" "(1 + 2)"
-  print $ fmap (""++) $ runParser (snd $ use originalParser) () "" "(1 + a)"
-  print $ fmap (""++) $ runParser (snd $ snd $ use extendedParser) () "" "(1 + a)"
+  print $ runParser (snd $ use (originalParser :: Object (OriginalParser String))) () "" "(1 + 2)"
+  print $ runParser (snd $ use (originalParser :: Object (OriginalParser String))) () "" "(1 + a)"
+  print $ runParser (snd $ snd $ use (extendedParser :: Object (ExtendedParser String))) () "" "(1 + a)"
